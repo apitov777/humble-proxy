@@ -1,5 +1,3 @@
-import 'dotenv/config';
-
 const safeJson = async (resp) => {
   const txt = await resp.text();
   return txt ? JSON.parse(txt) : {};
