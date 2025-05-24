@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ranking Cutting Edge - Guilda Humble</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f9f9f9;padding:20px}
+    h1{text-align:center;font-size:28px;margin:40px 0}
+    /* --- PÓDIO --- */
+    .podium{display:flex;justify-content:center;align-items:flex-end;gap:20px;max-width:900px;margin:40px auto}
+    .podium-spot{position:relative;overflow:hidden;border-radius:8px;box-shadow:0 4px 8px rgba(0,0,0,.1);
+                 padding:320px 12px 12px;display:flex;flex-direction:column;align-items:center;justify-content:flex-end}
+    .podium-spot h2,.podium-spot strong,.podium-spot p{margin:4px 0;z-index:1;text-shadow:0 0 5px #000}
+    .char-image{position:absolute;top:0;left:0;right:0;height:300px;background-size:contain;
+                background-position:center top;background-repeat:no-repeat}
+    .podium-1{width:220px;background:gold}
+    .podium-2{width:190px;background:silver}
+    .podium-3{width:170px;background:#cd7f32}
+    /* --- TABELA --- */
+    table{width:100%;border-collapse:collapse;margin-top:60px;background:#fff;box-shadow:0 0 10px rgba(0,0,0,.05)}
+    th,td{border:1px solid #ddd;padding:10px;text-align:center;vertical-align:top}
+    th{background:#f4f4f4}
+    .boss-list{text-align:left;font-size:13px;line-height:1.4}
+  </style>
+</head>
+<body>
+  <h1>RANKING CUTTING EDGE (COM BOSSES)</h1>
+
+  <div class="podium" id="podium"></div>
+
+  <table>
+    <thead>
+      <tr><th>#</th><th>Player</th><th>Qtd de Cutting Edges</th><th>Bosses</th></tr>
+    </thead>
+    <tbody id="tabela-ce"></tbody>
+  </table>
+
+  <script>
+    async function desenha() {
+      /* 1. Pede tudo pronto ao back-end */
+      const data = await fetch('/api/ranking').then(r=>r.json());
+
+
+      /* 2. Preenche o pódio (1º, 2º, 3º) – ordem visual 2-1-3 */
+      const podium = document.getElementById('podium');
+      const ordem  = [{i:1,cls:'podium-2'},{i:0,cls:'podium-1'},{i:2,cls:'podium-3'}];
+
+      ordem.forEach(pos=>{
+        const p = data[pos.i];
+        if (!p) return;
+        const div = document.createElement('div');
+        div.className = `podium-spot ${pos.cls}`;
+        div.innerHTML = `
+          <div class="char-image" style="background-image:url('${p.avatar}')"></div>
+          <h2>#${pos.i+1}</h2>
+          <strong>${p.name}</strong>
+          <p>${p.ces.length} CE(s)</p>`;
+        podium.appendChild(div);
+      });
+
+      /* 3. Monta a tabela completa */
+      const tbody = document.getElementById('tabela-ce');
+      data.forEach((p,i)=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${p.name}</td>
+          <td>${p.ces.length}</td>
+          <td class="boss-list">${p.ces.join(', ')||'—'}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+    desenha();
+  </script>
+</body>
+</html>
