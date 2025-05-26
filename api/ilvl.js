@@ -56,8 +56,6 @@ export default async function handler(req, res) {
 
     const players = (roster.members || []).filter(m => m.rank <= 5);
 
-    const seasonId = 31; // <- Atualize caso a Blizzard troque o ID da temporada
-
     const results = await Promise.all(players.map(async m => {
       const name = m.character.name;
       const realm = m.character.realm.slug;
@@ -67,22 +65,14 @@ export default async function handler(req, res) {
       let avatar = '';
 
       try {
-        // Tenta puxar o ilvl da temporada atual
-        const seasonal = await fetch(`${base}/mythic-keystone-profile/season/${seasonId}?namespace=profile-us&locale=pt_BR`, {
+        // Puxa o perfil básico e extrai o equipped_item_level
+        const profile = await fetch(`${base}?namespace=profile-us&locale=pt_BR`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(safeJson);
 
-        ilvl = seasonal?.equipment?.item_level?.value || 0;
-
-        // Se não conseguir, tenta o ilvl equipado diretamente
-        if (ilvl === 0) {
-          const equipment = await fetch(`${base}/equipment?namespace=profile-us&locale=pt_BR`, {
-            headers: { Authorization: `Bearer ${token}` }
-          }).then(safeJson);
-          ilvl = equipment.equipped_item_level || 0;
-        }
+        ilvl = profile.equipped_item_level || 0;
       } catch (err) {
-        console.error(`Erro ao obter ilvl de ${name}:`, err.message);
+        console.error(`Erro ao puxar ilvl de ${name}:`, err.message);
         ilvl = 0;
       }
 
@@ -90,9 +80,10 @@ export default async function handler(req, res) {
         const media = await fetch(`${base}/character-media?namespace=profile-us&locale=pt_BR`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(safeJson);
+
         avatar = media.assets?.find(a => a.key === 'avatar')?.value || '';
       } catch (err) {
-        console.error(`Erro ao obter imagem de ${name}:`, err.message);
+        console.error(`Erro ao puxar imagem de ${name}:`, err.message);
       }
 
       return { name, ilvl, avatar };
