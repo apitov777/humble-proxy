@@ -71,3 +71,37 @@ export default async function handler(req, res) {
         const seasonal = await fetch(`${base}/mythic-keystone-profile/season/${seasonId}?namespace=profile-us&locale=pt_BR`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(safeJson);
+
+        ilvl = seasonal?.equipment?.item_level?.value || 0;
+
+        // Se não conseguir, tenta o ilvl equipado diretamente
+        if (ilvl === 0) {
+          const equipment = await fetch(`${base}/equipment?namespace=profile-us&locale=pt_BR`, {
+            headers: { Authorization: `Bearer ${token}` }
+          }).then(safeJson);
+          ilvl = equipment.equipped_item_level || 0;
+        }
+      } catch (err) {
+        console.error(`Erro ao obter ilvl de ${name}:`, err.message);
+        ilvl = 0;
+      }
+
+      try {
+        const media = await fetch(`${base}/character-media?namespace=profile-us&locale=pt_BR`, {
+          headers: { Authorization: `Bearer ${token}` }
+        }).then(safeJson);
+        avatar = media.assets?.find(a => a.key === 'avatar')?.value || '';
+      } catch (err) {
+        console.error(`Erro ao obter imagem de ${name}:`, err.message);
+      }
+
+      return { name, ilvl, avatar };
+    }));
+
+    results.sort((a, b) => b.ilvl - a.ilvl);
+    res.status(200).json(results);
+  } catch (err) {
+    console.error('Erro no handler principal:', err);
+    res.status(500).json({ error: 'ilvl_failed', detail: err.stack || err.message });
+  }
+}
