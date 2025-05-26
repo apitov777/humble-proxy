@@ -1,12 +1,5 @@
-/* ----------------------------------------------------------
-   api/ranking.js – Função Serverless (ES-Modules) para Vercel
-   ---------------------------------------------------------- */
-
-/* 1. Dependências ----------------------------------------- */
 import cors from 'cors';
-import 'dotenv/config';          // lê .env ou variáveis da Vercel
 
-/* 2. CORS -------------------------------------------------- */
 const ALLOWED = [
   'https://www.humbleguild.com.br',
   'http://127.0.0.1:5500',
@@ -18,14 +11,12 @@ const runCors = (req, res) =>
     corsHandler(req, res, r => (r instanceof Error ? err(r) : ok()))
   );
 
-/* 3. Helper seguro de JSON -------------------------------- */
 const safeJson = async (resp) => {
   if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
   const txt = await resp.text();
   return txt ? JSON.parse(txt) : {};
 };
 
-/* 4. Cache de access-token -------------------------------- */
 let tokenCache = { value: null, exp: 0 };
 
 async function getToken() {
@@ -48,24 +39,18 @@ async function getToken() {
 
   tokenCache = {
     value: json.access_token,
-    exp  : Date.now() + json.expires_in * 1000 - 60_000 // renova 1 min antes
+    exp: Date.now() + json.expires_in * 1000 - 60_000
   };
   return tokenCache.value;
 }
 
-/* 5. Handler principal ------------------------------------ */
 export default async function handler(req, res) {
   try {
-    /* 5.1  libera CORS */
     await runCors(req, res);
-
-    /* 5.2  token Blizzard */
     const token = await getToken();
 
-    /* 5.3  roster da guilda */
     const rosterUrl =
-      'https://us.api.blizzard.com/data/wow/guild/azralon/humble/roster' +
-      '?namespace=profile-us&locale=en_US';
+      'https://us.api.blizzard.com/data/wow/guild/azralon/humble/roster?namespace=profile-us&locale=en_US';
 
     const roster = await fetch(rosterUrl, {
       headers: { Authorization: `Bearer ${token}` }
@@ -73,8 +58,7 @@ export default async function handler(req, res) {
 
     const players = (roster.members || []).filter(m => m.rank <= 5);
 
-    /* 5.4  busca achievements + avatar em lotes de 6 */
-    const LIMIT  = 6;
+    const LIMIT = 6;
     const chunks = players.reduce((acc, cur, i) => {
       (acc[i % LIMIT] ??= []).push(cur);
       return acc;
@@ -83,9 +67,9 @@ export default async function handler(req, res) {
     const results = [];
     for (const group of chunks) {
       const partial = await Promise.all(group.map(async (m) => {
-        const name  = m.character.name;
+        const name = m.character.name;
         const realm = m.character.realm.slug;
-        const base  =
+        const base =
           `https://us.api.blizzard.com/profile/wow/character/${realm}/${name.toLowerCase()}`;
 
         const [ach, media] = await Promise.all([
@@ -101,7 +85,7 @@ export default async function handler(req, res) {
 
         const ces = (ach.achievements || [])
           .filter(a => a.achievement?.name?.startsWith('Cutting Edge:'))
-          .map(a  => a.achievement.name.replace('Cutting Edge: ', ''));
+          .map(a => a.achievement.name.replace('Cutting Edge: ', ''));
 
         const avatar =
           media.assets?.find(a => a.key === 'avatar')?.value ||
@@ -116,7 +100,7 @@ export default async function handler(req, res) {
     res.status(200).json(results);
 
   } catch (err) {
-    console.error(err); // aparece nos Runtime Logs
+    console.error(err);
     res.status(500).json({ error: 'ranking_failed', detail: err.message });
   }
 }

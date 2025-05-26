@@ -1,3 +1,4 @@
 # Não subir credenciais nem dependências pesadas
 .env
 node_modules/
+.vercel
