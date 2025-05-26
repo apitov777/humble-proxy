@@ -56,13 +56,15 @@ export default async function handler(req, res) {
 
     const players = (roster.members || []).filter(m => m.rank <= 5);
 
+    const seasonId = 31; // <<--- CONFIRA se esse é o correto para TWW Season 1
+
     const results = await Promise.all(players.map(async m => {
       const name = m.character.name;
       const realm = m.character.realm.slug;
       const base = `https://us.api.blizzard.com/profile/wow/character/${realm}/${name.toLowerCase()}`;
 
-      const [equipment, media] = await Promise.all([
-        fetch(`${base}/equipment?namespace=profile-us&locale=pt_BR`, {
+      const [seasonal, media] = await Promise.all([
+        fetch(`${base}/mythic-keystone-profile/season/${seasonId}?namespace=profile-us&locale=pt_BR`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(safeJson),
         fetch(`${base}/character-media?namespace=profile-us&locale=pt_BR`, {
@@ -70,7 +72,7 @@ export default async function handler(req, res) {
         }).then(safeJson)
       ]);
 
-      const ilvl = equipment.equipped_item_level || 0;
+      const ilvl = seasonal?.equipment?.item_level?.value || 0;
       const avatar = media.assets?.find(a => a.key === 'avatar')?.value || '';
 
       return { name, ilvl, avatar };
