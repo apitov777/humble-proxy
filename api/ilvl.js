@@ -5,7 +5,6 @@ const ALLOWED = [
   'http://127.0.0.1:5500',
   'http://localhost:5500'
 ];
-
 const corsHandler = cors({ origin: ALLOWED });
 const runCors = (req, res) =>
   new Promise((ok, err) =>
@@ -57,7 +56,7 @@ export default async function handler(req, res) {
 
     const players = (roster.members || []).filter(m => m.rank <= 5);
 
-    const results = await Promise.all(players.map(async (m) => {
+    const results = await Promise.all(players.map(async m => {
       const name = m.character.name;
       const realm = m.character.realm.slug;
       const base = `https://us.api.blizzard.com/profile/wow/character/${realm}/${name.toLowerCase()}`;
@@ -80,7 +79,7 @@ export default async function handler(req, res) {
     results.sort((a, b) => b.ilvl - a.ilvl);
     res.status(200).json(results);
   } catch (err) {
-    console.error('ERRO:', err);
+    console.error(err);
     res.status(500).json({ error: 'ilvl_failed', detail: err.message });
   }
 }
