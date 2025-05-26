@@ -56,32 +56,18 @@ export default async function handler(req, res) {
 
     const players = (roster.members || []).filter(m => m.rank <= 5);
 
-    const seasonId = 31; // <<--- CONFIRA se esse é o correto para TWW Season 1
+    const seasonId = 31; // <- Atualize caso a Blizzard troque o ID da temporada
 
     const results = await Promise.all(players.map(async m => {
       const name = m.character.name;
       const realm = m.character.realm.slug;
       const base = `https://us.api.blizzard.com/profile/wow/character/${realm}/${name.toLowerCase()}`;
 
-      const [seasonal, media] = await Promise.all([
-        fetch(`${base}/mythic-keystone-profile/season/${seasonId}?namespace=profile-us&locale=pt_BR`, {
+      let ilvl = 0;
+      let avatar = '';
+
+      try {
+        // Tenta puxar o ilvl da temporada atual
+        const seasonal = await fetch(`${base}/mythic-keystone-profile/season/${seasonId}?namespace=profile-us&locale=pt_BR`, {
           headers: { Authorization: `Bearer ${token}` }
-        }).then(safeJson),
-        fetch(`${base}/character-media?namespace=profile-us&locale=pt_BR`, {
-          headers: { Authorization: `Bearer ${token}` }
-        }).then(safeJson)
-      ]);
-
-      const ilvl = seasonal?.equipment?.item_level?.value || 0;
-      const avatar = media.assets?.find(a => a.key === 'avatar')?.value || '';
-
-      return { name, ilvl, avatar };
-    }));
-
-    results.sort((a, b) => b.ilvl - a.ilvl);
-    res.status(200).json(results);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'ilvl_failed', detail: err.message });
-  }
-}
+        }).then(safeJson);
