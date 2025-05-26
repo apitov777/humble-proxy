@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       const realm = m.character.realm.slug;
       const base = `https://us.api.blizzard.com/profile/wow/character/${realm}/${name.toLowerCase()}`;
 
-      const [equipmentData, mediaData] = await Promise.all([
+      const [equipment, media] = await Promise.all([
         fetch(`${base}/equipment?namespace=profile-us&locale=pt_BR`, {
           headers: { Authorization: `Bearer ${token}` }
         }).then(safeJson),
@@ -70,8 +70,8 @@ export default async function handler(req, res) {
         }).then(safeJson)
       ]);
 
-      const ilvl = equipmentData.equipped_item_level || 0;
-      const avatar = mediaData.assets?.find(a => a.key === 'avatar')?.value || '';
+      const ilvl = equipment.equipped_item_level || 0;
+      const avatar = media.assets?.find(a => a.key === 'avatar')?.value || '';
 
       return { name, ilvl, avatar };
     }));
